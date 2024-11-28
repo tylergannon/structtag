@@ -1,14 +1,26 @@
-# structtag [![](https://github.com/fatih/structtag/workflows/build/badge.svg)](https://github.com/fatih/structtag/actions) [![PkgGoDev](https://pkg.go.dev/badge/github.com/fatih/structtag)](https://pkg.go.dev/github.com/fatih/structtag)
+# structtag
 
-structtag provides a way of parsing and manipulating struct tag Go fields. It's used by tools like [gomodifytags](https://github.com/fatih/gomodifytags). For more examples, checkout [the projects using structtag](https://pkg.go.dev/github.com/fatih/structtag?tab=importedby).
+[![](https://github.com/tylergannon/structtag/workflows/build/badge.svg)](https://github.com/tylergannon/structtag/actions)
 
-# Install
+`structtag` is a library for parsing struct tags in Go during static analysis. It is designed to provide a robust API for extracting metadata from struct fields in Go code. This fork focuses exclusively on **reading struct tags** and is no longer intended for modifying or rewriting them.
+
+This project is a fork of [`fatih/structtag`](https://github.com/fatih/structtag), originally created by Fatih Arslan. The primary changes in this fork include a simplified API tailored for read-only access to struct tags, along with enhancements to better support static analysis use cases.
+
+---
+
+## Install
+
+To install the package:
 
 ```bash
-go get github.com/fatih/structtag
+go get github.com/tylergannon/structtag
 ```
 
-# Example
+---
+
+## Example Usage
+
+The following example demonstrates how to parse and inspect struct tags using `structtag`:
 
 ```go
 package main
@@ -18,55 +30,86 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/fatih/structtag"
+	"github.com/tylergannon/structtag"
 )
 
 func main() {
-	type t struct {
-		t string `json:"foo,omitempty,string" xml:"foo"`
+	type Example struct {
+		Field string `json:"foo,omitempty" xml:"bar"`
 	}
 
-	// get field tag
-	tag := reflect.TypeOf(t{}).Field(0).Tag
+	// Get the struct tag from the field
+	tag := reflect.TypeOf(Example{}).Field(0).Tag
 
-	// ... and start using structtag by parsing the tag
+	// Parse the tag using structtag
 	tags, err := structtag.Parse(string(tag))
 	if err != nil {
 		panic(err)
 	}
 
-	// iterate over all tags
+	// Iterate over all tags
 	for _, t := range tags.Tags() {
-		fmt.Printf("tag: %+v\n", t)
+		fmt.Printf("Key: %s, Options: %v\n", t.Key, t.Options)
 	}
 
-	// get a single tag
+	// Access a specific tag by key
 	jsonTag, err := tags.Get("json")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(jsonTag)         // Output: json:"foo,omitempty,string"
-	fmt.Println(jsonTag.Key)     // Output: json
-	fmt.Println(jsonTag.Name)    // Output: foo
-	fmt.Println(jsonTag.Options) // Output: [omitempty string]
+	fmt.Printf("Key: %s, Options: %v\n", jsonTag.Key, jsonTag.Options)
 
-	// change existing tag
-	jsonTag.Name = "foo_bar"
-	jsonTag.Options = nil
-	tags.Set(jsonTag)
+	// Print the full tag string
+	fmt.Println(tags.String()) // Output: json:"foo,omitempty" xml:"bar"
 
-	// add new tag
-	tags.Set(&structtag.Tag{
-		Key:     "hcl",
-		Name:    "foo",
-		Options: []string{"squash"},
-	})
-
-	// print the tags
-	fmt.Println(tags) // Output: json:"foo_bar" xml:"foo" hcl:"foo,squash"
-
-	// sort tags according to keys
+	// Sort tags by key and print them
 	sort.Sort(tags)
-	fmt.Println(tags) // Output: hcl:"foo,squash" json:"foo_bar" xml:"foo"
+	fmt.Println(tags.String()) // Output: json:"foo,omitempty" xml:"bar"
 }
 ```
+
+---
+
+## Key Features
+
+- **Read-Only Access**: Extract and inspect struct tags without modifying them.
+- **Simplified API**: A clean interface for retrieving tag keys and options.
+- **Static Analysis**: Ideal for tools that analyze Go code, such as linters or code generators.
+
+---
+
+## API Overview
+
+### Parsing Struct Tags
+Use `Parse` to parse a struct field's tag into a `Tags` object:
+```go
+tags, err := structtag.Parse(`json:"foo,omitempty" xml:"bar"`)
+if err != nil {
+    panic(err)
+}
+```
+
+### Accessing Tags
+- **Retrieve all tags**:
+  ```go
+  allTags := tags.Tags()
+  ```
+- **Retrieve a specific tag by key**:
+  ```go
+  jsonTag, err := tags.Get("json")
+  if err != nil {
+      // Handle missing tag
+  }
+  fmt.Println(jsonTag.Key, jsonTag.Options)
+  ```
+
+### Inspecting Tags
+- **Key**: The key of the tag (e.g., `json` or `xml`).
+- **Options**: A slice of strings representing the options in the tag (e.g., `["foo", "omitempty"]` for `json:"foo,omitempty"`).
+
+---
+
+## Acknowledgments
+
+This project is based on [`fatih/structtag`](https://github.com/fatih/structtag), created by Fatih Arslan. While the API and functionality have been modified significantly, the foundation of this library owes much to the original implementation.
+
