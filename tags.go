@@ -29,10 +29,6 @@ type Tag struct {
 	// i.e: `json:"foo,omitempty". Here key is: "json"
 	Key string
 
-	// Name is a part of the value
-	// i.e: `json:"foo,omitempty". Here name is: "foo"
-	Name string
-
 	// Options is a part of the value. It contains a slice of tag options i.e:
 	// `json:"foo,omitempty". Here options is: ["omitempty"]
 	Options []string
@@ -101,17 +97,14 @@ func Parse(tag string) (*Tags, error) {
 			return nil, errTagValueSyntax
 		}
 
-		res := strings.Split(value, ",")
-		name := res[0]
-		options := res[1:]
-		if len(options) == 0 {
-			options = nil
+		var res []string
+		if value != "" {
+			res = strings.Split(value, ",")
 		}
 
 		tags = append(tags, &Tag{
 			Key:     key,
-			Name:    name,
-			Options: options,
+			Options: res,
 		})
 	}
 
@@ -273,11 +266,7 @@ func (t *Tag) HasOption(opt string) bool {
 // Value returns the raw value of the tag, i.e. if the tag is
 // `json:"foo,omitempty", the Value is "foo,omitempty"
 func (t *Tag) Value() string {
-	options := strings.Join(t.Options, ",")
-	if options != "" {
-		return fmt.Sprintf(`%s,%s`, t.Name, options)
-	}
-	return t.Name
+	return strings.Join(t.Options, ",")
 }
 
 // String reassembles the tag into a valid tag field representation
@@ -288,17 +277,12 @@ func (t *Tag) String() string {
 // GoString implements the fmt.GoStringer interface
 func (t *Tag) GoString() string {
 	template := `{
-		Key:    '%s',
-		Name:   '%s',
-		Option: '%s',
+		Key:     "%s",
+		Options: "%s",
 	}`
 
-	if t.Options == nil {
-		return fmt.Sprintf(template, t.Key, t.Name, "nil")
-	}
-
 	options := strings.Join(t.Options, ",")
-	return fmt.Sprintf(template, t.Key, t.Name, options)
+	return fmt.Sprintf(template, t.Key, options)
 }
 
 func (t *Tags) Len() int {

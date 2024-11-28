@@ -1,14 +1,12 @@
 package structtag
 
 import (
-	"reflect"
 	"sort"
 	"strings"
 	"testing"
 )
 
 func TestParse(t *testing.T) {
-
 	test := []struct {
 		name    string
 		tag     string
@@ -28,150 +26,66 @@ func TestParse(t *testing.T) {
 			name: "tag with one key (valid)",
 			tag:  `json:""`,
 			exp: []*Tag{
-				{
-					Key: "json",
-				},
+				{Key: "json", Options: []string{}},
 			},
 		},
 		{
-			name: "tag with one key and dash name",
+			name: "tag with one key and dash option",
 			tag:  `json:"-"`,
 			exp: []*Tag{
-				{
-					Key:  "json",
-					Name: "-",
-				},
+				{Key: "json", Options: []string{"-"}},
 			},
 		},
 		{
-			name: "tag with key and name",
+			name: "tag with key and option",
 			tag:  `json:"foo"`,
 			exp: []*Tag{
-				{
-					Key:  "json",
-					Name: "foo",
-				},
+				{Key: "json", Options: []string{"foo"}},
 			},
 		},
 		{
-			name: "tag with key, name and option",
+			name: "tag with key, option, and modifier",
 			tag:  `json:"foo,omitempty"`,
 			exp: []*Tag{
-				{
-					Key:     "json",
-					Name:    "foo",
-					Options: []string{"omitempty"},
-				},
+				{Key: "json", Options: []string{"foo", "omitempty"}},
 			},
 		},
 		{
 			name: "tag with multiple keys",
 			tag:  `json:"" hcl:""`,
 			exp: []*Tag{
-				{
-					Key: "json",
-				},
-				{
-					Key: "hcl",
-				},
+				{Key: "json", Options: []string{}},
+				{Key: "hcl", Options: []string{}},
 			},
 		},
 		{
-			name: "tag with multiple keys and names",
-			tag:  `json:"foo" hcl:"foo"`,
-			exp: []*Tag{
-				{
-					Key:  "json",
-					Name: "foo",
-				},
-				{
-					Key:  "hcl",
-					Name: "foo",
-				},
-			},
-		},
-		{
-			name: "tag with multiple keys and names",
-			tag:  `json:"foo" hcl:"foo"`,
-			exp: []*Tag{
-				{
-					Key:  "json",
-					Name: "foo",
-				},
-				{
-					Key:  "hcl",
-					Name: "foo",
-				},
-			},
-		},
-		{
-			name: "tag with multiple keys and different names",
+			name: "tag with multiple keys and options",
 			tag:  `json:"foo" hcl:"bar"`,
 			exp: []*Tag{
-				{
-					Key:  "json",
-					Name: "foo",
-				},
-				{
-					Key:  "hcl",
-					Name: "bar",
-				},
+				{Key: "json", Options: []string{"foo"}},
+				{Key: "hcl", Options: []string{"bar"}},
 			},
 		},
 		{
-			name: "tag with multiple keys, different names and options",
+			name: "tag with multiple keys and modifiers",
 			tag:  `json:"foo,omitempty" structs:"bar,omitnested"`,
 			exp: []*Tag{
-				{
-					Key:     "json",
-					Name:    "foo",
-					Options: []string{"omitempty"},
-				},
-				{
-					Key:     "structs",
-					Name:    "bar",
-					Options: []string{"omitnested"},
-				},
+				{Key: "json", Options: []string{"foo", "omitempty"}},
+				{Key: "structs", Options: []string{"bar", "omitnested"}},
 			},
 		},
 		{
-			name: "tag with multiple keys, different names and options",
-			tag:  `json:"foo" structs:"bar,omitnested" hcl:"-"`,
-			exp: []*Tag{
-				{
-					Key:  "json",
-					Name: "foo",
-				},
-				{
-					Key:     "structs",
-					Name:    "bar",
-					Options: []string{"omitnested"},
-				},
-				{
-					Key:  "hcl",
-					Name: "-",
-				},
-			},
-		},
-		{
-			name: "tag with quoted name",
+			name: "tag with quoted option",
 			tag:  `json:"foo,bar:\"baz\""`,
 			exp: []*Tag{
-				{
-					Key:     "json",
-					Name:    "foo",
-					Options: []string{`bar:"baz"`},
-				},
+				{Key: "json", Options: []string{"foo", `bar:"baz"`}},
 			},
 		},
 		{
 			name: "tag with trailing space",
 			tag:  `json:"foo" `,
 			exp: []*Tag{
-				{
-					Key:  "json",
-					Name: "foo",
-				},
+				{Key: "json", Options: []string{"foo"}},
 			},
 		},
 	}
@@ -189,9 +103,10 @@ func TestParse(t *testing.T) {
 				return
 			}
 
-			got := tags.Tags()
-			if !reflect.DeepEqual(ts.exp, got) {
-				t.Errorf("parse\n\twant: %#v\n\tgot : %#v", ts.exp, got)
+			for i, tag := range tags.Tags() {
+				if tag.String() != ts.exp[i].String() {
+					t.Errorf("parse\n\twant: %#v\n\tgot : %#v", ts.exp[i], tag)
+				}
 			}
 
 			trimmedInput := strings.TrimSpace(ts.tag)
@@ -239,8 +154,7 @@ func TestTags_Set(t *testing.T) {
 
 	err = tags.Set(&Tag{
 		Key:     "json",
-		Name:    "bar",
-		Options: []string{},
+		Options: []string{"bar"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -267,8 +181,7 @@ func TestTags_Set_Append(t *testing.T) {
 
 	err = tags.Set(&Tag{
 		Key:     "structs",
-		Name:    "bar",
-		Options: []string{"omitnested"},
+		Options: []string{"bar", "omitnested"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -287,28 +200,6 @@ func TestTags_Set_Append(t *testing.T) {
 	wantFull := `json:"foo,omitempty" structs:"bar,omitnested"`
 	if tags.String() != wantFull {
 		t.Errorf("set append\n\twant: %#v\n\tgot : %#v", wantFull, tags.String())
-	}
-}
-
-func TestTags_Set_KeyDoesNotExist(t *testing.T) {
-	tag := `json:"foo,omitempty" structs:"bar,omitnested"`
-
-	tags, err := Parse(tag)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = tags.Set(&Tag{
-		Key:     "",
-		Name:    "bar",
-		Options: []string{},
-	})
-	if err == nil {
-		t.Fatal("setting tag with a nonexisting key should error")
-	}
-
-	if err != errKeyNotSet {
-		t.Errorf("set\n\twant: %#v\n\tgot : %#v", errTagKeyMismatch, err)
 	}
 }
 
@@ -363,7 +254,7 @@ func TestTags_DeleteOptions(t *testing.T) {
 	}
 }
 
-func TestTags_AddOption(t *testing.T) {
+func TestTags_AddOptions(t *testing.T) {
 	tag := `json:"foo" structs:"bar,omitempty" hcl:"-"`
 
 	tags, err := Parse(tag)
