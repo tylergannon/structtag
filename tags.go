@@ -34,6 +34,16 @@ type Tag struct {
 	Options []string
 }
 
+// Value returns the value associated with the given name in the tag options, if it exists.
+func (t *Tag) Value(name string) (val string, ok bool) {
+	for _, opt := range t.Options {
+		if strings.HasPrefix(opt, name+"=") {
+			return opt[len(name)+1:], true
+		}
+	}
+	return "", false
+}
+
 // Parse parses a single struct field tag and returns the set of tags.
 func Parse(tag string) (*Tags, error) {
 	var tags []*Tag
@@ -263,15 +273,15 @@ func (t *Tag) HasOption(opt string) bool {
 	return false
 }
 
-// Value returns the raw value of the tag, i.e. if the tag is
-// `json:"foo,omitempty", the Value is "foo,omitempty"
-func (t *Tag) Value() string {
+// RawValue returns the raw value of the tag, i.e. if the tag is
+// `json:"foo,omitempty", the RawValue is "foo,omitempty"
+func (t *Tag) RawValue() string {
 	return strings.Join(t.Options, ",")
 }
 
 // String reassembles the tag into a valid tag field representation
 func (t *Tag) String() string {
-	return fmt.Sprintf(`%s:%q`, t.Key, t.Value())
+	return fmt.Sprintf(`%s:%q`, t.Key, t.RawValue())
 }
 
 // GoString implements the fmt.GoStringer interface

@@ -136,10 +136,10 @@ func TestTags_Get(t *testing.T) {
 			t.Errorf("get\n\twant: %#v\n\tgot : %#v", want, found.String())
 		}
 	})
-	t.Run("Value", func(t *testing.T) {
+	t.Run("RawValue", func(t *testing.T) {
 		want := `foo,omitempty`
-		if found.Value() != want {
-			t.Errorf("get\n\twant: %#v\n\tgot : %#v", want, found.Value())
+		if found.RawValue() != want {
+			t.Errorf("get\n\twant: %#v\n\tgot : %#v", want, found.RawValue())
 		}
 	})
 }
